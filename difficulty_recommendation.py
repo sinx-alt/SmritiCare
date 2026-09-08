@@ -1,3 +1,6 @@
+# difficulty_recommendation.py
+
+
 def recommend_difficulty(
     current_difficulty: int,
     accuracy: float,
@@ -19,8 +22,9 @@ def recommend_difficulty(
     Difficulty changes by only one level at a time
     to avoid sudden jumps.
 
-    total_change_score is accepted as additional trend
-    information but does not directly control the step size.
+    If trend is "insufficient_data", difficulty is
+    not increased until enough performance history
+    is available.
     """
 
     # Validate difficulty boundaries
@@ -43,18 +47,21 @@ def recommend_difficulty(
     # Accuracy signal
     if accuracy >= 0.85:
         performance_signal += 1
+
     elif accuracy < 0.50:
         performance_signal -= 1
 
     # Mistake-rate signal
     if mistake_rate <= 0.15:
         performance_signal += 1
+
     elif mistake_rate > 0.50:
         performance_signal -= 1
 
     # Trend signal
     if trend == "improving":
         performance_signal += 1
+
     elif trend == "declining":
         performance_signal -= 1
 
@@ -69,34 +76,71 @@ def recommend_difficulty(
     else:
         action = "maintain"
 
+    # Protect against insufficient data
+
+    # Do not increase difficulty when there is not
+    # enough history to establish a reliable trend.
+    if (
+        trend == "insufficient_data"
+        and action == "increase"
+    ):
+        action = "maintain"
+
     # Change difficulty by only one level
 
     if action == "increase":
-        recommended_difficulty = current_difficulty + 1
+
+        recommended_difficulty = (
+            current_difficulty + 1
+        )
 
     elif action == "decrease":
-        recommended_difficulty = current_difficulty - 1
+
+        recommended_difficulty = (
+            current_difficulty - 1
+        )
 
     else:
+
         recommended_difficulty = current_difficulty
 
     # Respect difficulty boundaries
 
     recommended_difficulty = max(
         min_difficulty,
-        min(max_difficulty, recommended_difficulty)
+        min(
+            max_difficulty,
+            recommended_difficulty
+        )
     )
 
     # Generate explanation
 
     if action == "increase":
-        reason = "strong overall performance with positive signals"
+
+        reason = (
+            "strong overall performance with positive signals"
+        )
 
     elif action == "decrease":
-        reason = "weak overall performance with negative signals"
+
+        reason = (
+            "weak overall performance with negative signals"
+        )
+
+    elif trend == "insufficient_data":
+
+        reason = (
+            "not enough trend history yet to safely "
+            "increase difficulty"
+        )
 
     else:
-        reason = "performance is suitable for the current difficulty"
+
+        reason = (
+            "performance is suitable for the "
+            "current difficulty"
+        )
 
     # Return recommendation
 
