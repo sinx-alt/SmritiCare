@@ -1,0 +1,35 @@
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: smriti
+      POSTGRES_PASSWORD: smriti_dev
+      POSTGRES_DB: smriticare
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smriti"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://smriti:smriti_dev@db:5432/smriticare
+      SECRET_KEY: ${SECRET_KEY}
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
