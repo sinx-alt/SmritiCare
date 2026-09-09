@@ -6,8 +6,8 @@ services:
       POSTGRES_USER: smriti
       POSTGRES_PASSWORD: smriti_dev
       POSTGRES_DB: smriticare
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

@@ -20,6 +20,9 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     patient_profile: Mapped["PatientProfile"] = relationship(back_populates="user", uselist=False)
+    caregiver_links = relationship("PatientCaregiverLink", back_populates="caregiver")
+    push_tokens = relationship("PushToken", back_populates="user")
+    
 
 class CaregiverLink(Base):
     __tablename__ = "caregiver_links"
@@ -28,12 +31,41 @@ class CaregiverLink(Base):
     patient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     relationship_label: Mapped[str] = mapped_column(String, nullable=True)
 
-class PatientProfile(Base):
-    __tablename__ = "patient_profiles"
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
-    language_pref: Mapped[str] = mapped_column(String, default="en")
-    baseline_completed: Mapped[bool] = mapped_column(Boolean, default=False)
-    user: Mapped["User"] = relationship(back_populates="patient_profile")
+
+class Patient(Base):
+    __tablename__ = "patients"
+    id = uuid_pk()
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    dob = Column(DateTime, nullable=True)
+    region = Column(String, nullable=True)          # e.g. "Assam"
+    locale = Column(String, nullable=False, default="en")  # e.g. "as", "hi", "en"
+    dementia_stage = Column(String, nullable=True)  # free text / clinician-set
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="patient_profile")
+    caregiver_links = relationship("PatientCaregiverLink", back_populates="patient")
+    game_sessions = relationship("GameSession", back_populates="patient")
+    reminders = relationship("Reminder", back_populates="patient")
+    contacts = relationship("Contact", back_populates="patient")
+    notes = relationship("Note", back_populates="patient")
+    recommendations = relationship("AIRecommendation", back_populates="patient")
+
+
+class PatientCaregiverLink(Base):
+    """Many-to-many: supports multiple caregivers per patient (e.g. two children)."""
+    __tablename__ = "patient_caregiver_links"
+    id = uuid_pk()
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
+    caregiver_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    relation = Column(String, nullable=True)  # "daughter", "son", "nurse"
+    access_level = Column(SAEnum(CaregiverAccessLevel), default=CaregiverAccessLevel.full, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (UniqueConstraint("patient_id", "caregiver_id", name="uq_patient_caregiver"),)
+
+    patient = relationship("Patient", back_populates="caregiver_links")
+    caregiver = relationship("User", back_populates="caregiver_links")
+
 
 class GameSession(Base):
     __tablename__ = "game_sessions"

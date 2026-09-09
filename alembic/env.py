@@ -4,6 +4,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from app.models import Base
 target_metadata = Base.metadata
 
+db_url = os.environ.get("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+db_url = db_url.replace("+asyncpg", "+psycopg2")  # Alembic needs a sync driver
+config.set_main_option("sqlalchemy.url", db_url)
+
 
 from logging.config import fileConfig
 
