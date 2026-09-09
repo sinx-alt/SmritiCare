@@ -1,8 +1,18 @@
 import { StyleSheet, Pressable, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { login } from '../services/api';
+
 
 import { ThemedText } from '@/components/themed-text';
+async function handleLogin(email: string, password: string) {
+  try {
+    await login(email, password);
+    router.replace('/(tabs)/home');   // adjust to your actual route
+  } catch (e) {
+    setError('Invalid email or password');
+  }
+}
 
 export default function LoginScreen() {
   return (
