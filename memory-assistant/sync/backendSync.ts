@@ -68,14 +68,14 @@ export async function syncPendingReminders(
  * Do not invent an endpoint here because this function must match the
  * backend contract before it can safely write remote data into SQLite.
  */
-export async function pullCaregiverReminders(
-  _patientId: string,
-  _config: BackendSyncConfig
-): Promise<void> {
-  // Future implementation:
-  // 1. obtain auth token
-  // 2. GET the agreed caregiver-reminders endpoint
-  // 3. validate the returned reminder objects
-  // 4. upsert them into local SQLite
-  // 5. mark imported rows as synced
+// sync/backendSync.ts — replace the stub body
+export async function pullCaregiverReminders(patientId: string, config: BackendSyncConfig) {
+  const token = await config.getAuthToken();
+  if (!token) return;
+  const res = await fetch(`${config.baseUrl}/api/reminders/${patientId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return;
+  const { reminders } = await res.json();
+  // upsert into SQLite via your existing reminderRepository, mark synced: true
 }
