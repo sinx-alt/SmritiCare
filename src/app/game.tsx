@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { apiFetch } from '../services/api';
 
 import { games, GameId } from '@/constants/games';
 
@@ -48,6 +49,8 @@ export default function GameScreen() {
   }
 
   const selectedGameId = selectedGame.id as GameId;
+  const recommendation = await apiFetch(`/api/recommendations/${patientId}`);
+
 
   return (
     <ThemedView style={styles.container}>
