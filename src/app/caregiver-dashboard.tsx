@@ -1,3 +1,8 @@
+import { useEffect, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { apiFetch } from '@/services/api';   // adjust to your actual path
+
+
 import {
   Pressable,
   ScrollView,
@@ -50,65 +55,57 @@ type RecommendationOut = {
 // Temporary mock data.
 // Replace these with API responses during backend integration.
 
-const patient: PatientProfileOut = {
-  userId: 'patient-1',
-  fullName: 'Kavish',
-  email: 'kavish@example.com',
-  languagePref: 'English',
-  baselineCompleted: true,
+type DashboardOverview = {
+  patient: PatientProfileOut;
+  sessions: SessionOut[];
+  recommendation: RecommendationOut;
 };
 
-const sessions: SessionOut[] = [
-  {
-    sessionId: '1',
-    patientId: 'patient-1',
-    gameId: 'memory_match',
-    score: 86,
-    accuracy: 0.86,
-    reactionTime: 2.4,
-    mistakes: 2,
-    attempts: 14,
-    difficulty: 1,
-    duration: 300,
-    timestamp: '2026-09-07T10:00:00',
-  },
-  {
-    sessionId: '2',
-    patientId: 'patient-1',
-    gameId: 'pattern_recall',
-    score: 78,
-    accuracy: 0.78,
-    reactionTime: 2.8,
-    mistakes: 3,
-    attempts: 14,
-    difficulty: 2,
-    duration: 320,
-    timestamp: '2026-09-06T11:00:00',
-  },
-  {
-    sessionId: '3',
-    patientId: 'patient-1',
-    gameId: 'number_sequence',
-    score: 82,
-    accuracy: 0.82,
-    reactionTime: 2.6,
-    mistakes: 2,
-    attempts: 12,
-    difficulty: 2,
-    duration: 290,
-    timestamp: '2026-09-06T15:00:00',
-  },
-];
+export default function CaregiverDashboard() {
+  const { patientId } = useLocalSearchParams<{ patientId: string }>();
+  const [data, setData] = useState<DashboardOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-const recommendation: RecommendationOut = {
-  id: 'recommendation-1',
-  patientId: 'patient-1',
-  nextGame: 'pattern_recall',
-  difficulty: 2,
-  duration: 10,
-  reason: 'Continue building consistency.',
-  changeFlag: false,
-};
+  useEffect(() => {
+    if (!patientId) return;
+    (async () => {
+      try {
+        const overview = await apiFetch(`/api/dashboard/${patientId}/overview`);
+        setData(overview);
+      } catch (e) {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [patientId]);
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <ThemedText>Loading...</ThemedText>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  if (error || !data || data.sessions.length === 0) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <ThemedText>No session data yet.</ThemedText>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  const { patient, sessions, recommendation } = data;
+  const lastSession = sessions[0];
+
+  return (
+    // ... your existing JSX, completely unchanged from here down ...
 
 function getGameTitle(gameId: GameId) {
   return games.find(game => game.id === gameId)?.title ?? gameId;
