@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from app.routers import auth, sessions, patients, recommendations, reminders, dashboard
+from app.routes import auth, sessions, patients, recommendations, reminders, dashboard
 
 app = FastAPI(title="SmritiCare API", version="1.0.0")
 
