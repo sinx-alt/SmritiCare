@@ -4,7 +4,7 @@ VALID_GAMES = {
     "pattern_recall",
     "number_sequence",
     "adaptive_chess",
-    "focus_flight",
+    "prakriti_spotter",
     "object_association",
     "ner_memory_quiz",
 }
