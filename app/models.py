@@ -103,6 +103,8 @@ class Patient(Base):
     contacts = relationship("Contact", back_populates="patient")
     notes = relationship("Note", back_populates="patient")
     recommendations = relationship("AIRecommendation", back_populates="patient")
+    baseline_completed = Column(Boolean, default=False, nullable=False)
+
 
 
 class PatientCaregiverLink(Base):
@@ -162,6 +164,9 @@ class AIRecommendation(Base):
     generated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     patient = relationship("Patient", back_populates="recommendations")
+    duration = Column(Integer, nullable=True)
+    reason = Column(String, nullable=True)
+    change_flag = Column(Boolean, default=False, nullable=False)
 
 
 # ---------- Memory Assistant (mirrors Member 5's local schema) ----------
