@@ -1,3 +1,5 @@
+import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -64,3 +66,22 @@ async def get_session(
     if user.role == Role.patient and user.id != session.patient_id:
         raise HTTPException(403, "Not your session")
     return session
+
+
+@router.post("/api/sessions")
+async def create_session(
+    payload: dict,   # GameResult contract from Member 3/5
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    db.add(GameSession(
+        patient_id=payload["patientId"], game_id=payload["gameId"],
+        session_id=payload["sessionId"], score=payload["score"],
+        accuracy=payload["accuracy"], reaction_time=payload["reactionTime"],
+        mistakes=payload["mistakes"], attempts=payload["attempts"],
+        hints_used=payload.get("hintsUsed", 0), difficulty=payload["difficulty"],
+        duration=payload["duration"], completed=payload["completed"],
+        played_at=datetime.fromisoformat(payload["timestamp"]),
+    ))
+    await db.commit()
+    return {"status": "ok"}

@@ -8,6 +8,8 @@ from app.database import get_db
 from app.models import User, Reminder, Role
 from app.schemas import ReminderIn, ReminderOut
 from app.deps import get_current_user
+from app.models import Reminder, ReminderType, RepeatType
+from app.deps import require_patient_access
 
 router = APIRouter(tags=["reminders"])
 
@@ -90,3 +92,59 @@ async def complete_reminder(
         await db.commit()
 
     return reminder
+
+@router.get("/{patient_id}")
+async def get_reminders(
+    patient_id: str,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_patient_access),   # pass patient_id via path, see note below
+):
+    result = await db.execute(select(Reminder).where(Reminder.patient_id == patient_id))
+    reminders = result.scalars().all()
+    return {
+        "reminders": [
+            {
+                "id": str(r.id),
+                "patientId": str(r.patient_id),
+                "type": r.type.value,
+                "title": r.title,
+                "details": r.details,
+                "time": r.time,
+                "date": r.date,
+                "repeat": r.repeat.value,
+                "isCompleted": r.is_completed,
+                "language": r.language,
+                "createdAt": r.created_at.isoformat(),
+                "synced": True,
+            }
+            for r in reminders
+        ]
+    }
+
+
+@router.post("/bulk")
+async def bulk_push_reminders(
+    payload: dict,   # {"reminders": [...]} — matches syncPendingReminders() exactly
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),   # import from app.deps
+):
+    saved = 0
+    for r in payload.get("reminders", []):
+        existing = await db.execute(select(Reminder).where(Reminder.id == r["id"]))
+        if existing.scalar_one_or_none():
+            continue  # idempotent — already synced
+        db.add(Reminder(
+            id=r["id"],
+            patient_id=r["patientId"],
+            type=ReminderType(r["type"]),
+            title=r["title"],
+            details=r.get("details"),
+            time=r["time"],
+            date=r.get("date"),
+            repeat=RepeatType(r["repeat"]),
+            is_completed=r["isCompleted"],
+            language=r["language"],
+        ))
+        saved += 1
+    await db.commit()
+    return {"status": "ok", "saved": saved}

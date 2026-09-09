@@ -1,0 +1,32 @@
+# render.yaml
+databases:
+  - name: smriticare-db
+    plan: free
+    databaseName: smriticare
+    user: smriti
+
+services:
+  - type: web
+    name: smriticare-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smriticare-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SERVICE_TOKEN
+        generateValue: true
+      - key: SERVICE_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "https://your-frontend-url.com"   # update once frontend is deployed/known
+      - key: FCM_PROJECT_ID
+        sync: false        # set manually in Render dashboard
+      - key: FCM_CREDENTIALS_PATH
+        value: /etc/secrets/fcm_service_account.json
+    dockerCommand: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
