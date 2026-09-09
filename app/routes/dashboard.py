@@ -6,7 +6,7 @@ import uuid
 from app.database import get_db
 from app.models import User, Reminder, GameSession, AIRecommendation, Role
 from app.schemas import DashboardToday, CaregiverDashboard, TrendPoint
-from app.deps import get_current_user, verify_caregiver_access
+from app.deps import get_current_user, verify_caregiver_access,require_patient_access
 
 router = APIRouter(tags=["dashboard"])
 
@@ -118,3 +118,14 @@ async def dashboard_caregiver(
         changeFlag=change_flag,
         totalSessions=total_sessions,
     )
+
+
+@router.get("/api/dashboard/{patient_id}/overview")
+async def get_overview(
+    patient_id: str,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_patient_access),   # blocks caregivers who aren't linked to this patient
+):
+    # pull recent game_sessions, active reminders, latest recommendation
+    # return them as one combined JSON object
+    ...
