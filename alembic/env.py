@@ -2,10 +2,20 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from app.models import Base
+from logging.config import fileConfig
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
+from alembic import context
+
+config = context.config  
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+
 target_metadata = Base.metadata
 
 db_url = os.environ.get("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
-db_url = db_url.replace("+asyncpg", "+psycopg2")  # Alembic needs a sync driver
+db_url = db_url.replace("+asyncpg", "").replace("postgresql://", "postgresql+psycopg2://", 1)
 config.set_main_option("sqlalchemy.url", db_url)
 
 
