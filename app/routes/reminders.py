@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models import User, Reminder, Role
 from app.schemas import ReminderIn, ReminderOut
 from app.deps import get_current_user
-from app.models import Reminder, ReminderType, RepeatType
+from app.models import Reminder
 from app.deps import require_patient_access
 
 router = APIRouter(tags=["reminders"])
