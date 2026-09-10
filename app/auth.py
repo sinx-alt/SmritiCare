@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.models import User, UserRole, Patient, PatientCaregiverLink
+from app.models import User, Role
 from app.audit import write_audit_log
 
 

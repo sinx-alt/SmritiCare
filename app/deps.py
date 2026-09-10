@@ -1,14 +1,13 @@
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
+from fastapi import Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
 from app.database import get_db
 from app.auth import decode_token
-from app.models import User, UserRole, Patient, PatientCaregiverLink
-from fastapi import Header
+from app.models import User, Role, CaregiverLink
 from app.config import settings
-from sqlalchemy import select
-from app.models import CaregiverLink
 from app.audit import write_audit_log
 
 
@@ -47,26 +46,16 @@ async def verify_caregiver_access(caregiver_id, patient_id, db: AsyncSession) ->
     return result.scalar_one_or_none() is not None
 
 async def require_patient_access(
-    patient_id: str,                       # FastAPI auto-fills this from the route's {patient_id}
+    patient_id: str,
     request: Request,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     allowed = False
-    if user.role == UserRole.admin:
-        allowed = True
-    elif user.role == UserRole.patient:
-        result = await db.execute(select(Patient).where(Patient.user_id == user.id))
-        patient = result.scalar_one_or_none()
-        allowed = patient is not None and str(patient.id) == patient_id
-    elif user.role == UserRole.caregiver:
-        result = await db.execute(
-            select(PatientCaregiverLink).where(
-                PatientCaregiverLink.patient_id == patient_id,
-                PatientCaregiverLink.caregiver_id == user.id,
-            )
-        )
-        allowed = result.scalar_one_or_none() is not None
+    if user.role == Role.patient:
+        allowed = str(user.id) == patient_id
+    elif user.role == Role.caregiver:
+        allowed = await verify_caregiver_access(user.id, patient_id, db)
 
     await write_audit_log(
         db, actor_user_id=user.id, action="READ", resource_type="patient",

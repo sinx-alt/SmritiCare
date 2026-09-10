@@ -5,6 +5,8 @@ import uuid
 
 from app.database import get_db
 from app.models import User, Reminder, GameSession, AIRecommendation, Role,Patient
+from app.models import PatientProfile
+from app.schemas import PatientProfileOut, SessionOut, RecommendationOut
 from app.schemas import DashboardToday, CaregiverDashboard, TrendPoint
 from app.deps import get_current_user, verify_caregiver_access,require_patient_access
 
@@ -126,41 +128,29 @@ async def get_overview(
     db: AsyncSession = Depends(get_db),
     user=Depends(require_patient_access),
 ):
-    patient_row = (await db.execute(
-        select(Patient, User).join(User, Patient.user_id == User.id).where(Patient.id == patient_id)
+    row = (await db.execute(
+        select(User, PatientProfile).join(PatientProfile, PatientProfile.user_id == User.id)
+        .where(User.id == patient_id)
     )).first()
-    if not patient_row:
+    if not row:
         raise HTTPException(404, "Patient not found")
-    patient, u = patient_row
+    u, profile = row
 
     sessions = (await db.execute(
         select(GameSession).where(GameSession.patient_id == patient_id)
-        .order_by(GameSession.played_at.desc()).limit(10)
+        .order_by(GameSession.created_at.desc()).limit(10)
     )).scalars().all()
 
     rec = (await db.execute(
         select(AIRecommendation).where(AIRecommendation.patient_id == patient_id)
-        .order_by(AIRecommendation.generated_at.desc()).limit(1)
+        .order_by(AIRecommendation.created_at.desc()).limit(1)
     )).scalar_one_or_none()
 
     return {
-        "patient": {
-            "userId": str(u.id), "fullName": u.full_name, "email": u.email,
-            "languagePref": patient.locale, "baselineCompleted": patient.baseline_completed,
-        },
-        "sessions": [
-            {"sessionId": s.session_id, "patientId": str(s.patient_id), "gameId": s.game_id.value,
-             "score": s.score, "accuracy": s.accuracy, "reactionTime": s.reaction_time,
-             "mistakes": s.mistakes, "attempts": s.attempts, "difficulty": s.difficulty,
-             "duration": s.duration, "timestamp": s.played_at.isoformat()}
-            for s in sessions
-        ],
-        "recommendation": {
-            "id": str(rec.id), "patientId": str(rec.patient_id), "nextGame": rec.recommended_next_game.value,
-            "difficulty": rec.recommended_difficulty, "duration": rec.duration,
-            "reason": rec.reason, "changeFlag": rec.change_flag,
-        } if rec else None,
+        "patient": PatientProfileOut(
+            userId=u.id, fullName=u.full_name, email=u.email,
+            languagePref=profile.language_pref, baselineCompleted=profile.baseline_completed,
+        ),
+        "sessions": [SessionOut.model_validate(s) for s in sessions],
+        "recommendation": RecommendationOut.model_validate(rec) if rec else None,
     }
-    # pull recent game_sessions, active reminders, latest recommendation
-    # return them as one combined JSON object
-    ...
