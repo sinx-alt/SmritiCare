@@ -4,8 +4,7 @@ from sqlalchemy import select
 import uuid
 
 from app.database import get_db
-from app.models import User, Reminder, GameSession, AIRecommendation, Role,Patient
-from app.models import PatientProfile
+from app.models import User, Reminder, GameSession, AIRecommendation, Role,PatientProfile
 from app.schemas import PatientProfileOut, SessionOut, RecommendationOut
 from app.schemas import DashboardToday, CaregiverDashboard, TrendPoint
 from app.deps import get_current_user, verify_caregiver_access,require_patient_access
