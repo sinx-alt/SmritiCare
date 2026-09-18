@@ -88,13 +88,25 @@ def analyze_trend(
         return {
             "trend": "insufficient_data",
             "session_count": total_sessions,
-            "invalid_session_count": invalid_session_count
+            "invalid_session_count": invalid_session_count,
+            "baseline_session_count": 0,
+            "recent_session_count": 0
         }
 
     recent_count = min(recent_sessions, total_sessions - 1)
 
     baseline_df = df.iloc[:-recent_count].copy()
     recent_df = df.tail(recent_count).copy()
+
+    # Require at least 2 baseline sessions for meaningful trend analysis
+    if len(baseline_df) < 2:
+        return {
+            "trend": "insufficient_data",
+            "session_count": total_sessions,
+            "invalid_session_count": invalid_session_count,
+            "baseline_session_count": 0,
+            "recent_session_count": 0
+        }
 
     baseline_mean = {
         feature: baseline_df[feature].mean()
