@@ -11,7 +11,8 @@ from app.deps import get_current_user
 from app.models import Reminder
 from app.deps import require_patient_access
 
-router = APIRouter(tags=["reminders"])
+router = APIRouter(prefix="/reminders", tags=["reminders"])
+
 
 @router.post("/reminders", response_model=ReminderOut, status_code=201)
 async def create_reminder(
