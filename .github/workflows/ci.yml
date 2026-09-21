@@ -1,0 +1,31 @@
+# .github/workflows/ci.yml
+name: CI
+on:
+  push:
+    branches: [backend, main]
+  pull_request:
+    branches: [main]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: smriti
+          POSTGRES_PASSWORD: smriti_dev
+          POSTGRES_DB: smriticare_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U smriti" --health-interval=5s --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://smriti:smriti_dev@localhost:5432/smriticare_test
+        run: alembic upgrade head
+      - name: Build Docker image
+        run: docker build -t smriticare-backend .
